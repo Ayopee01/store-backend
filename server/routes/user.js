@@ -1,4 +1,5 @@
 const express = require("express");
+const bcrypt = require("bcrypt");
 const router = express.Router();
 
 // REGISTER
@@ -15,9 +16,11 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ message: "Username or Email already exists" });
     }
 
+    const hashedPassword = await bcrypt.hash(password, 10); // 🔐 เข้ารหัสรหัสผ่าน
+
     await req.pool.query(
       "INSERT INTO users (username, email, password, avatar) VALUES (?, ?, ?, ?)",
-      [username, email, password, avatar || null]
+      [username, email, hashedPassword, avatar || null]
     );
 
     res.json({ success: true, message: "Register successful" });
@@ -40,7 +43,8 @@ router.post("/login", async (req, res) => {
 
     const user = rows[0];
 
-    if (user.password !== password) {
+    const isMatch = await bcrypt.compare(password, user.password); // 🔐 ตรวจสอบรหัสผ่านที่ hash
+    if (!isMatch) {
       return res.status(400).json({ message: "Invalid password" });
     }
 
