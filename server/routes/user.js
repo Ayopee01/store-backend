@@ -34,6 +34,7 @@ router.post("/register", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log("🔐 Login payload:", { email });
 
     const [rows] = await req.pool.query("SELECT * FROM users WHERE email = ?", [email]);
 
@@ -43,7 +44,7 @@ router.post("/login", async (req, res) => {
 
     const user = rows[0];
 
-    const isMatch = await bcrypt.compare(password, user.password); // 🔐 ตรวจสอบรหัสผ่านที่ hash
+    const isMatch = await bcrypt.compare(password, user.password); // ✅ เปรียบเทียบ hash
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid password" });
     }
@@ -58,7 +59,7 @@ router.post("/login", async (req, res) => {
       },
     });
   } catch (err) {
-    console.error("❌ Login error:", err);
+    console.error("❌ Login error:", err.message);
     res.status(500).json({ message: "Login failed" });
   }
 });
