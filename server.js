@@ -37,7 +37,8 @@ app.use((req, res, next) => {
 // ✅ API routes
 app.use('/products', productRouter);
 app.use('/orders', ordersRouter);
-app.use('/auth', userRouter); // 🔁 สำคัญ: frontend ต้องเรียก /auth/login
+app.use("/auth", userRouter); // 🔁 สำคัญ: frontend ต้องเรียก /auth/login
+
 
 // ✅ Health check route
 app.get('/', (req, res) => {
