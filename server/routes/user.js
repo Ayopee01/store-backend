@@ -1,89 +1,88 @@
 const express = require("express");
 const router = express.Router();
-const bcrypt = require("bcryptjs");
+const pool = require("../db");
 
-// 🔁 ตรวจสอบซ้ำ
-router.post("/check-duplicate", async (req, res) => {
-  const { username, email } = req.body;
+// REGISTER
+router.post("/register", async (req, res) => {
   try {
-    if (username) {
-      const [rows] = await req.pool.query(
-        "SELECT id FROM users WHERE username = ?",
-        [username]
-      );
-      return res.json({ exists: rows.length > 0 });
+    const { username, email, password, avatar } = req.body;
+
+    // ตรวจสอบว่าผู้ใช้นี้มีอยู่หรือยัง
+    const [existing] = await pool.query(
+      "SELECT * FROM users WHERE email = ? OR username = ?",
+      [email, username]
+    );
+
+    if (existing.length > 0) {
+      return res.status(400).json({ message: "Username or Email already exists" });
     }
-    if (email) {
-      const [rows] = await req.pool.query(
-        "SELECT id FROM users WHERE email = ?",
-        [email]
-      );
-      return res.json({ exists: rows.length > 0 });
-    }
-    return res.status(400).json({ message: "Missing field" });
+
+    await pool.query(
+      "INSERT INTO users (username, email, password, avatar) VALUES (?, ?, ?, ?)",
+      [username, email, password, avatar || null]
+    );
+
+    res.json({ success: true, message: "Register successful" });
   } catch (err) {
-    console.error("❌ Duplicate check error:", err);
-    return res.status(500).json({ message: "Internal server error" });
+    console.error("❌ Register error:", err);
+    res.status(500).json({ message: "Register failed" });
   }
 });
 
-// 🔒 Login endpoint
+// LOGIN
 router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
   try {
-    const [rows] = await req.pool.query(
+    const { email, password } = req.body;
+
+    const [rows] = await pool.query(
       "SELECT * FROM users WHERE email = ?",
       [email]
     );
+
     if (rows.length === 0) {
-      return res.status(401).json({ message: "Email not found" });
+      return res.status(400).json({ message: "User not found" });
     }
 
     const user = rows[0];
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({ message: "Incorrect password" });
+
+    if (user.password !== password) {
+      return res.status(400).json({ message: "Invalid password" });
     }
 
     res.json({
       success: true,
-      message: "Login successful",
       user: {
         id: user.id,
         username: user.username,
         email: user.email,
+        avatar: user.avatar
       },
     });
   } catch (err) {
     console.error("❌ Login error:", err);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: "Login failed" });
   }
 });
 
-// ✅ Register endpoint
-router.post("/register", async (req, res) => {
-  const { username, email, password } = req.body;
+// CHECK DUPLICATE
+router.post("/check-duplicate", async (req, res) => {
+  const { username, email } = req.body;
+
   try {
-    const [check] = await req.pool.execute(
-      "SELECT id FROM users WHERE username = ? OR email = ?",
-      [username, email]
-    );
-    if (check.length > 0) {
-      return res
-        .status(400)
-        .json({ message: "Username or Email already exists." });
+    if (username) {
+      const [rows] = await pool.query("SELECT id FROM users WHERE username = ?", [username]);
+      return res.json({ exists: rows.length > 0 });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    await req.pool.execute(
-      "INSERT INTO users (username, email, password) VALUES (?, ?, ?)",
-      [username, email, hashedPassword]
-    );
+    if (email) {
+      const [rows] = await pool.query("SELECT id FROM users WHERE email = ?", [email]);
+      return res.json({ exists: rows.length > 0 });
+    }
 
-    res.json({ message: "User registered successfully!" });
+    return res.status(400).json({ message: "Invalid field" });
   } catch (err) {
-    console.error("❌ Register error:", err);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("❌ Check duplicate error:", err);
+    res.status(500).json({ message: "Check failed" });
   }
 });
 

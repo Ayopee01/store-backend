@@ -9,7 +9,11 @@ const userRouter = require('./server/routes/user');
 
 const app = express();
 
-app.use(cors());
+// ✅ Middleware
+app.use(cors({
+  origin: '*', // แนะนำให้เจาะจง origin ที่ปลอดภัยใน production
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+}));
 app.use(express.json());
 
 // ✅ Create MySQL connection pool
@@ -33,11 +37,16 @@ app.use((req, res, next) => {
 // ✅ API routes
 app.use('/products', productRouter);
 app.use('/orders', ordersRouter);
-app.use('/auth', userRouter);
+app.use('/auth', userRouter); // 🔁 สำคัญ: frontend ต้องเรียก /auth/login
 
 // ✅ Health check route
 app.get('/', (req, res) => {
   res.send('✅ Backend is running!');
+});
+
+// ✅ 404 fallback route (optional)
+app.use((req, res) => {
+  res.status(404).json({ message: 'API route not found' });
 });
 
 // ✅ Start server
