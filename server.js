@@ -1,21 +1,18 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const bcrypt = require('bcrypt');
 const mysql = require('mysql2/promise');
 
-// ✅ Import route modules
-const productRouter = require('./routes/products');
-const ordersRouter = require('./routes/orders');
-const userRouter = require('./routes/user');
+const productRouter = require('./server/routes/products');
+const ordersRouter = require('./server/routes/orders');
+const userRouter = require('./server/routes/user');
 
 const app = express();
 
-// ✅ Middleware
 app.use(cors());
 app.use(express.json());
 
-// ✅ Create MySQL pool from .env
+// ✅ Create MySQL connection pool
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -27,24 +24,24 @@ const pool = mysql.createPool({
   queueLimit: 0,
 });
 
-// ✅ Inject pool into every request
+// ✅ Attach pool to every request
 app.use((req, res, next) => {
   req.pool = pool;
   next();
 });
 
-// ✅ API Routes
+// ✅ API routes
 app.use('/products', productRouter);
 app.use('/orders', ordersRouter);
-app.use('/auth', userRouter); // ⬅️ เปลี่ยนจาก '/' เป็น '/auth'
+app.use('/auth', userRouter);
 
-// ✅ Health Check (วางท้ายสุด)
+// ✅ Health check route
 app.get('/', (req, res) => {
   res.send('✅ Backend is running!');
 });
 
-// ✅ Start the server
+// ✅ Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () =>
-  console.log(`✅ Server running on http://localhost:${PORT}`)
-);
+app.listen(PORT, () => {
+  console.log(`✅ Server running on http://localhost:${PORT}`);
+});
