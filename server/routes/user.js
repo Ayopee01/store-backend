@@ -61,4 +61,23 @@ router.post("/login", async (req, res) => {
   }
 });
 
+// CHECK DUPLICATE
+router.post("/check-duplicate", async (req, res) => {
+  const { username, email } = req.body;
+  try {
+    if (username) {
+      const [rows] = await req.pool.query("SELECT * FROM users WHERE username = ?", [username]);
+      return res.json({ exists: rows.length > 0 });
+    }
+    if (email) {
+      const [rows] = await req.pool.query("SELECT * FROM users WHERE email = ?", [email]);
+      return res.json({ exists: rows.length > 0 });
+    }
+    res.status(400).json({ message: "No field to check" });
+  } catch (err) {
+    console.error("❌ Duplicate check error:", err);
+    res.status(500).json({ message: "Duplicate check failed" });
+  }
+})
+
 module.exports = router;
