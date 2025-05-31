@@ -68,8 +68,7 @@ router.post("/login", async (req, res) => {
 });
 
 // CHECK DUPLICATE
-router.post("/check-duplicate", async (req, res) => {
-  // ใช้ pool ที่ส่งมาจาก middleware
+router.post('/check-duplicate', async (req, res) => {
   const pool = req.pool;
   const { username, email } = req.body;
   try {
@@ -83,5 +82,6 @@ router.post("/check-duplicate", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
 
 module.exports = router;
