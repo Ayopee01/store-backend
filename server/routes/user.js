@@ -72,10 +72,23 @@ router.post('/check-duplicate', async (req, res) => {
   const pool = req.pool;
   const { username, email } = req.body;
   try {
-    const [rows] = await pool.query(
-      "SELECT * FROM users WHERE username = ? OR email = ?",
-      [username, email]
-    );
+    if (!username && !email) {
+      return res.status(400).json({ error: "No username or email provided" });
+    }
+
+    let sql = "SELECT * FROM users WHERE ";
+    let params = [];
+    if (username && email) {
+      sql += " username = ? OR email = ?";
+      params = [username, email];
+    } else if (username) {
+      sql += " username = ?";
+      params = [username];
+    } else if (email) {
+      sql += " email = ?";
+      params = [email];
+    }
+    const [rows] = await pool.query(sql, params);
     res.json({ exists: rows.length > 0 });
   } catch (err) {
     console.error("❌ Check duplicate error:", err);
