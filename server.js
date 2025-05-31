@@ -9,9 +9,12 @@ const userRouter = require('./server/routes/user');
 
 const app = express();
 
-// ✅ CORS Middleware
+// ✅ CORS Middleware (ระบุ origin ที่ไว้ใจได้ หรือใช้ "*" ชั่วคราวช่วง dev)
 app.use(cors({
-  origin: '*', // 📌 แนะนำให้กำหนด origin ที่ไว้ใจได้ เช่น "https://shoppingonline-pink.vercel.app"
+  origin: [
+    "https://shoppingonline-pink.vercel.app", // Production domain
+    "http://localhost:5173" // Local dev
+  ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
@@ -52,7 +55,15 @@ app.use((req, res) => {
   res.status(404).json({ message: '❌ API route not found' });
 });
 
-// ✅ Start Server 5000
+// ✅ Error Handler (ป้องกัน process ตาย)
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection:', reason);
+});
+
+// ✅ Start Server (ใช้ PORT จาก env หรือ 5000)
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);

@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const bcrypt = require("bcryptjs");
 
 // REGISTER
 router.post("/register", async (req, res) => {
@@ -16,9 +17,12 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ message: "Username or Email already exists" });
     }
 
+    // hash password ก่อนบันทึก
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     await pool.query(
       "INSERT INTO users (username, email, password, avatar) VALUES (?, ?, ?, ?)",
-      [username, email, password, avatar || null]
+      [username, email, hashedPassword, avatar || null]
     );
 
     res.json({ success: true, message: "Register successful" });
@@ -42,7 +46,9 @@ router.post("/login", async (req, res) => {
 
     const user = rows[0];
 
-    if (user.password !== password) {
+    // ใช้ bcrypt.compare!
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
       return res.status(400).json({ message: "Invalid password" });
     }
 
@@ -63,6 +69,8 @@ router.post("/login", async (req, res) => {
 
 // CHECK DUPLICATE
 router.post("/check-duplicate", async (req, res) => {
+  // ใช้ pool ที่ส่งมาจาก middleware
+  const pool = req.pool;
   const { username, email } = req.body;
   try {
     const [rows] = await pool.query(
